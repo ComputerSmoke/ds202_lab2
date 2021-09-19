@@ -1,0 +1,95 @@
+---
+title: "lab2"
+author: "Addison Schmidt"
+date: "9/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. The cocoa percents have a median of 70% and a similar mean of 71%. The distribution is not significantly skewed, and has a narrow 1st-3rd quartile; 
+50% of the percentages fall between 70 and 74 percent cocoa. There are two outliers in the data, with cocoa percentages near 100%.
+```{r}
+library(classdata)
+hist(choco$CocoaPercent)
+boxplot(choco$CocoaPercent)
+summary(choco$CocoaPercent)
+```
+2.  Burma is tied for the fewest with just 1 rating, while Venezuala has the most with over 200. Unsurprisingly, countries with more cocoa exports seem to tend towards
+having more ratings. The first graph shows the 30 countries with the fewest, and the second the 31 with the most in the dataset.
+```{r}
+x = table(choco$CountryBeanOrigin)
+x = sort(x)
+barplot(x[1:30], las=2)
+barplot(x[31:61], las=2)
+```
+
+3. The data show that there is a negative correlation between the cocoa percent and its rating. We are 95% certain that the correlation is between -0.18656 and -0.10912.
+This is shown by the linear regression line on the scatterplot. The points themselves are difficult to read because they are numberous. When excluding chocolates with more
+than 95% cocoa, we still find that this correlation holds - although to a lesser degree - yielding a 95% confidence interval from -0.10497 to -0.02577.
+```{r}
+cor.test(choco$CocoaPercent, choco$Rating)
+plot(choco$CocoaPercent, choco$Rating)
+model = lm(choco$Rating ~ choco$CocoaPercent, data=choco)
+abline(model)
+
+smaller = choco[choco$CocoaPercent < 95,]
+cor.test(smaller$CocoaPercent, smaller$Rating)
+plot(smaller$CocoaPercent, smaller$Rating)
+model = lm(smaller$Rating ~ smaller$CocoaPercent, data=smaller)
+abline(model)
+```
+
+4. Although there is variance in the mean, medians, modes, etc. of flavor ratings across countries as seen in the first graph, we do not see a significant difference in ratings
+amongst countries with at least 100 ratings. The variace amongst other countries is likely driven by random variance, and is not statistically significant. Therefore, this
+dataset does not show us a significant difference between countries.
+```{r}
+boxplot(Rating ~ CountryBeanOrigin ,data=choco)
+most = choco[(x[choco$CountryBeanOrigin] > 100),]
+boxplot(Rating ~ CountryBeanOrigin, data=most, las=2)
+labels = c("Blend", "Dominican Republic", "Ecuador", "Madagascar", "Peru", "Venezuela")
+for(label in labels) {
+  temp = most[most$CountryBeanOrigin == label,]
+  print(label)
+  print(summary(temp$Rating))
+}
+```
+
+5. I will first compare the company to CocoaPercent amongst the companies with the most reviews. The interesting part of this analysis is the variance within a company, as well as the differences between the cocoa amounts they use.
+```{r}
+tableCompany = table(choco$Company)
+tableCompany = sort(tableCompany)
+mostCompany = choco[(tableCompany[choco$Company] > 20),]
+boxplot(CocoaPercent ~ Company, data=mostCompany, las=2)
+labelsCompany = c("A. Morin", "Arete", "Bonnat", "Dandelion", "Domori", "Fresco", "Guitard", "Pralus", "Soma", "Valrhona", "Zotter")
+for(label in labelsCompany) {
+  tempCompany = mostCompany[mostCompany$Company == label,]
+  print(label)
+  print(summary(tempCompany$CocoaPercent))
+}
+```
+
+From the summary statistics we see that the mean and median of all 11 of these companies is close to 70%. The boxplot shows us that most companies have a few outliers 
+with higher cocoa percentage (likely specialized chocolates), and that most have a very small range from quartile 1 to quartile 3. Zotter is the exception to this, with a relatively much wider range of percentages.
+
+Secondly, I will compare the review date by rating to see how the ratings have trended over time. The year 2021 will be omitted because reviews may vary by season, and 
+not all seasons of 2021 have passed yet.
+```{r}
+choco = choco[choco$ReviewDate < 2021, ]
+cor.test(choco$ReviewDate, choco$Rating)
+
+x = c()
+labels = c()
+for(i in 2006:2020) {
+  tmp = choco[choco$ReviewDate == i,]
+  x[i-2005] = mean(tmp$Rating)
+  labels[i-2005] = i
+}
+barplot(x, names.arg=labels, las=2)
+boxplot(Rating ~ ReviewDate, data=choco, las=2)
+```
+
+While it's hard to see the trend in either the barplot or boxplot, we can construct a 95% confidence interval that the correlation is between 0.054 and 0.134. This is a small
+positive correlation. From the boxplot, we can see that the interquartile range was greatest in 2006, and was lowest in 2017.
